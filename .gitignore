@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# App state
+weather_memory.json
+chroma_memory_db/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" font-family="ui-sans-serif,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1117"/><stop offset="1" stop-color="#13181f"/>
+    </linearGradient>
+    <marker id="arr" markerWidth="12" markerHeight="12" refX="8" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#d97757"/>
+    </marker>
+    <style>
+      .stage{fill:#161b22;stroke:#d97757;stroke-width:2;rx:14;}
+      .label{fill:#f7c59f;font-size:21px;font-weight:800;letter-spacing:1px;}
+      .desc{fill:#c9d1d9;font-size:14px;}
+      .guard{fill:#10161e;stroke:#30363d;stroke-width:1.5;}
+      .gtitle{font-size:14px;font-weight:700;}
+      .gtext{fill:#8b949e;font-size:12.5px;}
+      .flow{stroke:#d97757;stroke-width:2.5;fill:none;}
+    </style>
+  </defs>
+
+  <rect width="1200" height="560" fill="url(#bg2)"/>
+  <text x="40" y="52" fill="#e6edf3" font-size="26" font-weight="800">The PGVR loop</text>
+  <text x="40" y="80" fill="#8b949e" font-size="15">The model proposes &#183; deterministic code decides &#183; mistakes get caught before they reach you</text>
+
+  <!-- input -->
+  <g transform="translate(40,120)">
+    <rect width="220" height="58" rx="12" fill="#1f2937" stroke="#58a6ff" stroke-width="2"/>
+    <text x="20" y="26" fill="#58a6ff" font-size="13">your question</text>
+    <text x="20" y="46" fill="#e6edf3" font-size="15" font-weight="600">"kasol vs malana?"</text>
+  </g>
+  <path class="flow" d="M150,178 L150,210" marker-end="url(#arr)"/>
+
+  <!-- PARAMETERIZE -->
+  <g transform="translate(40,212)">
+    <rect class="stage" width="430" height="86" rx="14"/>
+    <text class="label" x="22" y="34">1 · PARAMETERIZE</text>
+    <text class="desc" x="22" y="58">small model → structured tool calls</text>
+    <text class="desc" x="22" y="76" fill="#8b949e">one get_weather per place · city / region / country</text>
+  </g>
+  <!-- guards on the right of parameterize -->
+  <g transform="translate(500,206)">
+    <rect class="guard" width="300" height="44" rx="10"/>
+    <text class="gtitle" x="14" y="20" fill="#f0883e">&#8617; U-TURN</text>
+    <text class="gtext" x="86" y="20">drop a city not in your text</text>
+    <text class="gtext" x="86" y="36">(kills hallucinated locations)</text>
+  </g>
+  <g transform="translate(500,256)">
+    <rect class="guard" width="300" height="44" rx="10"/>
+    <text class="gtitle" x="14" y="20" fill="#3fb950">&#8635; REFINE</text>
+    <text class="gtext" x="86" y="20">comparison but &lt; 2 places?</text>
+    <text class="gtext" x="86" y="36">re-extract, insist on all</text>
+  </g>
+  <path class="flow" d="M255,298 L255,330" marker-end="url(#arr)"/>
+
+  <!-- GROUND -->
+  <g transform="translate(40,332)">
+    <rect class="stage" width="430" height="92" rx="14"/>
+    <text class="label" x="22" y="34">2 · GROUND</text>
+    <text class="desc" x="22" y="58">geocode 10 candidates &#183; score the best match</text>
+    <text class="desc" x="22" y="78" fill="#8b949e">exact-name + region + country + population + admin rank</text>
+  </g>
+  <g transform="translate(500,338)">
+    <rect class="guard" width="300" height="38" rx="10"/>
+    <text class="gtext" x="14" y="24"><tspan fill="#f7c59f" font-weight="700">state name?</tspan>  Punjab &#8594; Ludhiana</text>
+  </g>
+  <g transform="translate(500,382)">
+    <rect class="guard" width="300" height="38" rx="10"/>
+    <text class="gtext" x="14" y="24"><tspan fill="#f7c59f" font-weight="700">zero hits?</tspan>  Gadansk &#8594; Gdansk (typo)</text>
+  </g>
+  <path class="flow" d="M255,424 L255,456" marker-end="url(#arr)"/>
+
+  <!-- VERIFY -->
+  <g transform="translate(40,458)">
+    <rect class="stage" width="430" height="74" rx="14"/>
+    <text class="label" x="22" y="32">3 · VERIFY</text>
+    <text class="desc" x="22" y="56">does the winner match your stated region/country?</text>
+  </g>
+  <g transform="translate(500,460)">
+    <rect class="guard" width="300" height="32" rx="9"/>
+    <text class="gtext" x="14" y="21"><tspan fill="#f85149" font-weight="700">no match</tspan> &#8594; refuse + suggest options</text>
+  </g>
+  <g transform="translate(500,498)">
+    <rect class="guard" width="300" height="32" rx="9"/>
+    <text class="gtext" x="14" y="21"><tspan fill="#f0883e" font-weight="700">wrong country</tspan> &#8594; &#9888; correct you</text>
+  </g>
+
+  <!-- ACT (right column) -->
+  <path class="flow" d="M470,495 L560,495 L560,300 L900,300 L900,230" marker-end="url(#arr)" opacity="0.0"/>
+  <g transform="translate(850,120)">
+    <rect class="stage" width="310" height="120" rx="14" fill="#0f1b14" stroke="#3fb950"/>
+    <text x="22" y="34" fill="#3fb950" font-size="21" font-weight="800" letter-spacing="1">4 · ACT + SYNTHESIZE</text>
+    <text class="desc" x="22" y="62">fetch live data · format in Python</text>
+    <text class="desc" x="22" y="82" fill="#8b949e">(no model prose &#8594; no invented numbers)</text>
+    <text class="desc" x="22" y="104" fill="#8b949e">+ temperature-gap line for compares</text>
+  </g>
+  <path class="flow" d="M1005,240 L1005,300" marker-end="url(#arr)"/>
+  <g transform="translate(850,302)">
+    <rect width="310" height="120" rx="12" fill="#0d1117" stroke="#30363d"/>
+    <text x="20" y="30" fill="#e6edf3" font-size="14" font-weight="700">Kasol 25.6&#176;C &#183; clear</text>
+    <text x="20" y="54" fill="#e6edf3" font-size="14" font-weight="700">Mal&#257;na 15.4&#176;C &#183; drizzle</text>
+    <line x1="20" y1="68" x2="290" y2="68" stroke="#21262d"/>
+    <text x="20" y="92" fill="#3fb950" font-size="14">&#9878; Kasol is 10.2&#176;C warmer</text>
+    <text x="20" y="110" fill="#8b949e" font-size="12">grounded · verified · correct region</text>
+  </g>
+</svg>
