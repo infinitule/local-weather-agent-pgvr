@@ -98,7 +98,7 @@ python3 agentic.py "is it warmer in Mumbai or Delhi?" # same engine, direct
 | File | What it is |
 |---|---|
 | [`agentic.py`](agentic.py) | **The PGVR smart agent** — all the grounding/verification logic above. |
-| [`weather_app.py`](weather_app.py) | The original **ReAct** agent (tool loop) + **ChromaDB-style vector memory**; `--smart` routes into `agentic.py`. |
+| [`weather_app.py`](weather_app.py) | The original **ReAct** agent (tool loop) + a **lightweight ChromaDB-style vector memory** (no `chromadb` dependency — see below); `--smart` routes into `agentic.py`. |
 | [`memory.py`](memory.py) | Persistent vector memory (Ollama embeddings + cosine search + JSON store). |
 | [`Agentic_AI_Day6.ipynb`](Agentic_AI_Day6.ipynb) | The teaching notebook this project grew out of. |
 
@@ -146,6 +146,47 @@ verify each place.
   guesses — that's what makes a 0.8B model trustworthy here.
 - **Honesty over guessing.** When a place can't be grounded to the stated region, the
   app says so and offers candidates rather than reporting the wrong city.
+
+---
+
+## Why not ChromaDB? (the memory layer)
+
+The teaching notebook used **ChromaDB** for conversation memory. On this machine
+(**Python 3.14**) `pip install chromadb` fails — and the reason is a neat little
+collision at the bleeding edge of the toolchain:
+
+1. **Python 3.14 is brand new**, so much of chromadb's dependency tree has no `cp314`
+   binary wheels yet.
+2. **pip backtracks.** It can't satisfy the latest chromadb (which needs only `numpy`)
+   with prebuilt wheels on 3.14, so it walks back to **older chromadb releases** — and
+   those depend on **pandas**.
+3. That older **pandas has no 3.14 wheel**, so pip tries to **build it from source**.
+4. The build dies with `ModuleNotFoundError: No module named 'pkg_resources'` —
+   **setuptools removed `pkg_resources` in v81+**, and this env has **setuptools 82**.
+5. **Build isolation** (PEP 517) seals it: pip builds in a sandbox with its own modern
+   setuptools, so installing `setuptools`/`pkg_resources` in the main env doesn't help.
+
+> New Python (no wheels) × old pandas (forced source build) × new setuptools (no
+> `pkg_resources`), locked in by build isolation.
+
+Rather than pin an old Python or disable build isolation, we **reimplement the one slice
+we actually use**. Memory here does exactly one job — store conversation turns and
+retrieve the semantically relevant ones — which is the thinnest possible sliver of
+ChromaDB. [`memory.py`](memory.py) is ~40 readable lines and keeps dependencies at just
+`ollama + requests`:
+
+| ChromaDB / LangChain piece | Our equivalent (`memory.py`) |
+|---|---|
+| `OllamaEmbeddings` / embedding function | `ollama.embed("nomic-embed-text")` → 768-float vector |
+| `Chroma(persist_directory=…)` SQLite+parquet store | a `list[{text, embedding}]` dumped to `weather_memory.json` |
+| `similarity_search` (HNSW index) | `_cosine()` over all vectors → sort → top-`k=3` above `min_score` |
+| `VectorStoreRetrieverMemory.save_context()` / `load_memory_variables()` | `save_context()` / `recall()` — same names, same flow |
+
+**Trade-offs, honestly:** search is an **O(n) linear scan** in pure Python — ideal for
+the hundreds–thousands of turns a personal agent accumulates, where ChromaDB's HNSW index
+targets millions. No metadata filtering or concurrent writers either. You'd switch back to
+ChromaDB at ~10k+ entries — by which point `cp314` wheels will exist and the install will
+just work.
 
 ---
 

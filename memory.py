@@ -6,8 +6,11 @@ VectorStoreRetrieverMemory): store each conversation turn as an embedding,
 then retrieve only the turns whose *meaning* is similar to the new question.
 
 We embed with the local Ollama model `nomic-embed-text` and keep the vectors
-in a small JSON file, so there is no chromadb dependency (chromadb's pinned
-pandas does not build on Python 3.14). The behaviour is identical:
+in a small JSON file, so there is no chromadb dependency. On Python 3.14 pip
+backtracks to older chromadb releases that pull in pandas, and that pandas has
+no 3.14 wheel so it tries to build from source and fails (setuptools 81+ removed
+`pkg_resources`). Rather than fight that, we reimplement the slice we use. The
+behaviour is identical:
 
     save_context(...)         → embed the turn, persist it
     recall("where do I live") → cosine-similarity search, return the closest turns
