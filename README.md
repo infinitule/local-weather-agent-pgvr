@@ -151,42 +151,28 @@ verify each place.
 
 ## Why not ChromaDB? (the memory layer)
 
-The teaching notebook used **ChromaDB** for conversation memory. On this machine
-(**Python 3.14**) `pip install chromadb` fails — and the reason is a neat little
-collision at the bleeding edge of the toolchain:
+The teaching notebook used **ChromaDB** for conversation memory. On **Python 3.14**,
+`pip install chromadb` collapses through five toolchain dominoes — so we route around it
+with ~40 lines that reproduce exactly the slice we use:
 
-1. **Python 3.14 is brand new**, so much of chromadb's dependency tree has no `cp314`
-   binary wheels yet.
-2. **pip backtracks.** It can't satisfy the latest chromadb (which needs only `numpy`)
-   with prebuilt wheels on 3.14, so it walks back to **older chromadb releases** — and
-   those depend on **pandas**.
-3. That older **pandas has no 3.14 wheel**, so pip tries to **build it from source**.
-4. The build dies with `ModuleNotFoundError: No module named 'pkg_resources'` —
-   **setuptools removed `pkg_resources` in v81+**, and this env has **setuptools 82**.
-5. **Build isolation** (PEP 517) seals it: pip builds in a sandbox with its own modern
-   setuptools, so installing `setuptools`/`pkg_resources` in the main env doesn't help.
+<p align="center">
+  <img src="assets/why-not-chromadb.svg" alt="Why ChromaDB won't install on Python 3.14, and the hand-built memory that replaces it" width="100%"/>
+</p>
 
-> New Python (no wheels) × old pandas (forced source build) × new setuptools (no
-> `pkg_resources`), locked in by build isolation.
+In words: Python 3.14 has no `cp314` wheels for much of the tree → pip backtracks to older
+chromadb releases that need **pandas** → that pandas has no 3.14 wheel and builds from
+source → the build hits `ModuleNotFoundError: pkg_resources` (**setuptools 81+ removed it**;
+this env has 82) → **PEP 517 build isolation** means fixing setuptools in your main env
+never reaches the sandbox. New Python × old pandas × new setuptools, locked in.
 
-Rather than pin an old Python or disable build isolation, we **reimplement the one slice
-we actually use**. Memory here does exactly one job — store conversation turns and
-retrieve the semantically relevant ones — which is the thinnest possible sliver of
-ChromaDB. [`memory.py`](memory.py) is ~40 readable lines and keeps dependencies at just
-`ollama + requests`:
+The replacement maps onto ChromaDB one-to-one:
 
-| ChromaDB / LangChain piece | Our equivalent (`memory.py`) |
+| ChromaDB / LangChain piece | Our equivalent ([`memory.py`](memory.py)) |
 |---|---|
 | `OllamaEmbeddings` / embedding function | `ollama.embed("nomic-embed-text")` → 768-float vector |
 | `Chroma(persist_directory=…)` SQLite+parquet store | a `list[{text, embedding}]` dumped to `weather_memory.json` |
 | `similarity_search` (HNSW index) | `_cosine()` over all vectors → sort → top-`k=3` above `min_score` |
 | `VectorStoreRetrieverMemory.save_context()` / `load_memory_variables()` | `save_context()` / `recall()` — same names, same flow |
-
-**Trade-offs, honestly:** search is an **O(n) linear scan** in pure Python — ideal for
-the hundreds–thousands of turns a personal agent accumulates, where ChromaDB's HNSW index
-targets millions. No metadata filtering or concurrent writers either. You'd switch back to
-ChromaDB at ~10k+ entries — by which point `cp314` wheels will exist and the install will
-just work.
 
 ---
 
